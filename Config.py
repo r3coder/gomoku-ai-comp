@@ -1,0 +1,10 @@
+
+
+GAMEMODE = 0
+GRID_X = 15
+GRID_Y = 15
+
+
+GS = 36
+BOARD_X = 18
+BOARD_Y = 18
