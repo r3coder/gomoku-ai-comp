@@ -10,8 +10,8 @@ from Utils import COLOR, Point2d, UIButton
 
 #############################################################################################
 # Add Your Agent Here
-from Agents import Test, CleverAgent
-AgentList = [Test.Test(), CleverAgent.CleverAgent()]
+from Agents import Test
+AgentList = [Test.Test()]
 #############################################################################################
 
 GG = GomokuGame(Point2d(GRID_X, GRID_Y))
@@ -228,7 +228,6 @@ def MouseDown(pos):
         GG.PlaceStone(clickPos)
     return 0
 
-GG.IsPositionMakesMorestones()
 
 def Main():
     pygame.init()
