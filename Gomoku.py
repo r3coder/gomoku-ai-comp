@@ -135,6 +135,11 @@ class GomokuGame:
     ## pos(Point2d): position to check
     ## return(bool): True if it makes a 4-4
     def IsPositionMakes33(self, pos, slient = True):
+        if self.board[pos.x, pos.y] != 0:
+            if not slient:
+                print("%s is not a winning position, because it is not empty" % str(pos))
+            return False
+        
         stone_color = self.stoneCount % 2 + 1
         # temporary place a stone and get lines, and remove placed stone
         self.board[pos.x, pos.y] = stone_color
@@ -153,6 +158,11 @@ class GomokuGame:
     ## pos(Point2d): position to check
     ## return(bool): True if it makes a 4-4
     def IsPositionMakes44(self, pos, slient = True):
+        if self.board[pos.x, pos.y] != 0:
+            if not slient:
+                print("%s is not a winning position, because it is not empty" % str(pos))
+            return False
+        
         if not slient:
             print("Check if %s makes a 4-4" % str(pos))
         stone_color = self.stoneCount % 2 + 1
@@ -186,6 +196,11 @@ class GomokuGame:
     ## pos(Point2d): position to check
     ## return(bool): True if it makes more than 5 stones, False otherwise (including it makes 5 stones, gomoku completes)
     def IsPositionMakesMorestones(self, pos, slient = True):
+        if self.board[pos.x, pos.y] != 0:
+            if not slient:
+                print("%s is not a winning position, because it is not empty" % str(pos))
+            return False
+        
         if not slient:
             print("Check if %s makes more than 5 stones" % str(pos))
         stone_color = self.stoneCount % 2 + 1
@@ -217,6 +232,11 @@ class GomokuGame:
     ## pos(Point2d): position to check
     ## return(bool): True if it is a winning position, False otherwise
     def IsPositionIsWinning(self, pos, slient = True):
+        if self.board[pos.x, pos.y] != 0:
+            if not slient:
+                print("%s is not a winning position, because it is not empty" % str(pos))
+            return False
+        
         if not slient:
             print("Check if %s makes a winning move"%str(pos))
         stone_color = self.stoneCount % 2 + 1
