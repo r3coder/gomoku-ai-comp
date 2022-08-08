@@ -3,7 +3,7 @@ import random
 from re import T
 import timeit
 import pygame
-from Config import GAMEMODE, GRID_X, GRID_Y, BOARD_X, BOARD_Y
+from Config import GAMEMODE, GRID_X, GRID_Y, BOARD_X, BOARD_Y, ROUNDS
 from Config import GS
 from Gomoku import GomokuGame
 from Utils import COLOR, Point2d, UIButton
@@ -28,7 +28,7 @@ class GameManager:
         self.lastPoint = Point2d(-1, -1)
 
         self.currentRound = 0
-        self.totalRound = 50
+        self.totalRound = ROUNDS
 
         self.time_limit = 1.0
         self.UIElements = dict()
@@ -39,10 +39,15 @@ class GameManager:
         self.moveFail = [0] * (len(AgentList))
         self.log = ""
 
+        self.stepPause = 0
+
+        # log file
+        self.logFile = open("log.txt", "w")
+        self.logFile.write("Log\n")
         # UI Elements
         ui_start = (BOARD_X+GS*(GRID_X+1), BOARD_Y)
         self.UIElements["S"] = UIButton((ui_start[0], ui_start[1], GS*3.8, GS*1.8), "Start", size=1.5, col=COLOR.green)
-        self.UIElements["X"] = UIButton((ui_start[0]+GS*4, ui_start[1], GS*3.8, GS*1.8), "Start x 50", size=1, col=COLOR.green)
+        self.UIElements["X"] = UIButton((ui_start[0]+GS*4, ui_start[1], GS*3.8, GS*1.8), "Start x %d"%ROUNDS, size=1, col=COLOR.green)
         self.UIElements["R"] = UIButton((ui_start[0], ui_start[1]+GS*2, GS*3.8, GS*1.8), "Reset", size=1.5, col=COLOR.red)
         self.UIElements["BX"] = UIButton((ui_start[0]+GS*4, ui_start[1]+GS*2, GS*3.8, GS*0.8), "Black:Human", size=0.8)
         self.UIElements["WX"] = UIButton((ui_start[0]+GS*4, ui_start[1]+GS*3, GS*3.8, GS*0.8), "White:Human", size=0.8)
@@ -74,7 +79,7 @@ class GameManager:
                     print("executing")
 
                 elif key[0] == "X":
-                    self.Execute(50)
+                    self.Execute(ROUNDS)
                 elif key[0] == "R":
                     self.Reset()
 
@@ -88,14 +93,16 @@ class GameManager:
         
         self.log = ""
         self.currentRound = 0
-        self.totalRound = 50
+        self.totalRound = ROUNDS
         pass
 
     def StartRound(self):
         self.state = "executing"
         self.currentRound += 1
+        self.stepPause = 180
         print("Round %s"%self.currentRound)
         GG.InitializeBoard()
+        self.logFile.write("Black '%s', White '%s':"%(self.GetPlayerName("black"), self.GetPlayerName("white")))
         self.lastPoint = Point2d(-1, -1)
         if self.blackPlayer != None:
             self.blackPlayer.Initialize()
@@ -142,7 +149,8 @@ class GameManager:
                     try:
                         pnt = self.blackPlayer.Move(GG, "black")
                         print("Black Player %s Played %s"%(self.blackPlayer.__class__.__name__, str(pnt)))
-                    except:
+                    except Exception as e:
+                        print(str(e))
                         pnt = None
                         flag = True
                     v, m = GG.PlaceStone(pnt)
@@ -161,7 +169,8 @@ class GameManager:
                     try:
                         pnt = self.whitePlayer.Move(GG, "white")
                         print("White Player %s Played %s"%(self.whitePlayer.__class__.__name__, str(pnt)))
-                    except:
+                    except Exception as e:
+                        print(str(e))
                         pnt = None
                         flag = True
                     v, m = GG.PlaceStone(pnt)
@@ -171,8 +180,8 @@ class GameManager:
                         pnt = random.choice(GG.GetAllValidMoves())
                         GG.PlaceStone(pnt)
                     self.moveTotal[AgentList.index(self.whitePlayer)] += 1
-            
             if pnt != None:
+                self.logFile.write("%s, "%str(pnt))
                 self.lastPoint = pnt
             
             # Check if end of game
@@ -190,13 +199,21 @@ class GameManager:
                 if GG.winner == 1:
                     self.roundWin[ind_b] += 1
                     self.log += "B"
-                else:
+                    self.logFile.write(" Black Win\n")
+                elif GG.winner == 2:
                     self.log += "W"
                     self.roundWin[ind_w] += 1
+                    self.logFile.write(" White Win\n")
+                else:
+                    self.logFile.write(" Draw\n")
+
                 
                 self.roundTotal[ind_b] += 1
                 self.roundTotal[ind_w] += 1
-
+                self.state = "ready"
+        elif self.state == "ready":
+            self.stepPause -= 1
+            if self.stepPause <= 0:
                 if self.currentRound == self.totalRound:
                     self.state = "idle"
                 else:
@@ -324,7 +341,7 @@ def Draw(screen):
 
     t = fontSmall.render("Win Rate", True, COLOR.black)
     screen.blit(t, [list_start[0]+GS*9, list_start[1]+GS*1.2])
-    t = fontSmall.render("Move Valid rate", True, COLOR.black)
+    t = fontSmall.render("Move Invalid rate", True, COLOR.black)
     screen.blit(t, [list_start[0]+GS*14, list_start[1]+GS*1.2])
 
     for i in range(len(AgentList)):
