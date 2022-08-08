@@ -72,12 +72,13 @@ class GomokuGame:
         self.board = None
         self.state = None
         self.stoneCount = 0
+        self.winner = -1
         self.InitializeBoard()
 
     def InitializeBoard(self, slient = True):
         self.board = np.zeros((self.boardDim.x, self.boardDim.y))
         self.stoneCount = 0
-
+        self.winner = -1
         self.state = "playing"
 
         if not slient:
@@ -100,6 +101,7 @@ class GomokuGame:
         if self.IsPositionIsWinning(pos):
             self.board[pos.x, pos.y] = stone
             self.state = "over"
+            self.winner = stone
             if not slient:
                 print("Player {} wins".format(stone))
             return True

@@ -1,4 +1,5 @@
 
+import random
 from re import T
 import timeit
 import pygame
@@ -10,8 +11,8 @@ from Utils import COLOR, Point2d, UIButton
 
 #############################################################################################
 # Add Your Agent Here
-from Agents import Test
-AgentList = [Test.Test()]
+from Agents import RandomDrop
+AgentList = [RandomDrop.RandomDrop()]
 #############################################################################################
 
 GG = GomokuGame(Point2d(GRID_X, GRID_Y))
@@ -26,7 +27,16 @@ class GameManager:
         self.state = "idle"
         self.lastPoint = Point2d(-1, -1)
 
+        self.currentRound = 0
+        self.totalRound = 50
+
+        self.time_limit = 1.0
         self.UIElements = dict()
+
+        self.roundTotal = [0] * (len(AgentList) + 1)
+        self.roundWin = [0] * (len(AgentList) + 1)
+        self.log = ""
+
         # UI Elements
         ui_start = (BOARD_X+GS*(GRID_X+1), BOARD_Y)
         self.UIElements["S"] = UIButton((ui_start[0], ui_start[1], GS*3.8, GS*1.8), "Start", size=1.5, col=COLOR.green)
@@ -36,8 +46,8 @@ class GameManager:
         self.UIElements["WX"] = UIButton((ui_start[0]+GS*4, ui_start[1]+GS*3, GS*3.8, GS*0.8), "White:Human", size=0.8)
         list_start = (BOARD_X+GS*(GRID_X+1), BOARD_Y+GS*4)
         for i in range(len(AgentList)):
-            self.UIElements["B%s"%i] = UIButton((list_start[0] + GS*4, list_start[1]+GS*(i+7/4), GS*3/4, GS*3/4), "B", size=3/4)
-            self.UIElements["W%s"%i] = UIButton((list_start[0] + GS*5, list_start[1]+GS*(i+7/4), GS*3/4, GS*3/4), "W", size=3/4)
+            self.UIElements["B%s"%i] = UIButton((list_start[0] + GS*6, list_start[1]+GS*(i+11/4), GS*3/4, GS*3/4), "B", size=3/4)
+            self.UIElements["W%s"%i] = UIButton((list_start[0] + GS*7, list_start[1]+GS*(i+11/4), GS*3/4, GS*3/4), "W", size=3/4)
     
     def Draw(self, screen):
         for key, value in self.UIElements.items():
@@ -46,7 +56,7 @@ class GameManager:
     def Event(self, event):
         for key, value in self.UIElements.items():
             clicked = value.Event(event)
-            if clicked:
+            if event.type == pygame.MOUSEBUTTONDOWN and value.rect.collidepoint(event.pos):
                 if key[0] == "B":
                     if key[1] == "X":
                         self.blackPlayer = None
@@ -59,6 +69,8 @@ class GameManager:
                         self.whitePlayer = AgentList[int(key[1])]
                 elif key[0] == "S":
                     self.Execute(1)
+                    print("executing")
+
                 elif key[0] == "X":
                     self.Execute(50)
                 elif key[0] == "R":
@@ -71,14 +83,30 @@ class GameManager:
         GG.InitializeBoard()
         self.state = "idle"
         self.lastPoint = Point2d(-1, -1)
+        
+        self.log = ""
+        self.currentRound = 0
+        self.totalRound = 50
         pass
 
+    def StartRound(self):
+        self.state = "executing"
+        self.currentRound += 1
+        print("Round %s"%self.currentRound)
+        GG.InitializeBoard()
+        self.lastPoint = Point2d(-1, -1)
+        if self.blackPlayer != None:
+            self.blackPlayer.Initialize()
+        if self.whitePlayer != None:
+            self.whitePlayer.Initialize()
+
     def Execute(self, times):
+        self.totalRound = times
+        self.currentRound = 0
+        self.log = ""
         if self.state == "idle":
-            self.state = "executing"
-            print("Executing...")
-            # Execute the game for times times
-            pass
+            if self.currentRound < self.totalRound:
+                self.StartRound()
 
     def GetPlayerName(self, user):
         if user == "black":
@@ -108,16 +136,54 @@ class GameManager:
                 if self.blackPlayer is None:
                     pass
                 else:
-                    pnt = self.blackPlayer.Move(GG, "black")
+                    try:
+                        pnt = self.blackPlayer.Move(GG, "black")
+                    except:
+                        print("Black Player Error!, placing stone at random")
+                        pnt = random.choice(GG.GetAllValidMoves())
+                            
                     GG.PlaceStone(pnt)
                     self.lastPoint = pnt
+
             elif GG.GetTurnText() == "white":
                 if self.whitePlayer is None:
                     pass
                 else:
-                    pnt = self.whitePlayer.Move(GG, "white")
+                    try:
+                        pnt = self.whitePlayer.Move(GG, "white")
+                    except:
+                        print("White Player Error!, placing stone at random")
+                        pnt = random.choice(GG.GetAllValidMoves())
                     GG.PlaceStone(pnt)
                     self.lastPoint = pnt
+            
+            # Check if end of game
+            if GG.state == "over":
+                # add winner
+                if self.blackPlayer != None:
+                    ind_b = AgentList.index(self.blackPlayer)
+                else:
+                    ind_b = -1
+                if self.whitePlayer != None:
+                    ind_w = AgentList.index(self.whitePlayer)
+                else:
+                    ind_w = -1
+
+                if GG.winner == 1:
+                    self.roundWin[ind_b] += 1
+                    self.log += "B"
+                else:
+                    self.log += "W"
+                    self.roundWin[ind_w] += 1
+                
+                self.roundTotal[ind_b] += 1
+                self.roundTotal[ind_w] += 1
+
+                if self.currentRound == self.totalRound:
+                    self.state = "idle"
+                else:
+                    self.StartRound()
+                    
 
     def SetAgent(self, user, index):
         if user == "black":
@@ -129,6 +195,7 @@ class GameManager:
             return False
         print("Agent set!")
         return True
+
 GM = GameManager()
 from Gomoku import *
 lst = [0, 0, 1, 1, 1, 0, 1, 1, 0]
@@ -169,7 +236,7 @@ def Draw(screen):
 
     # Draw Game Information
     info_start = (BOARD_X, BOARD_Y+GS*GRID_Y+GS/4)
-    pygame.draw.rect(screen, COLOR.black, [info_start[0], info_start[1], GS*(GRID_X), GS*3],2)
+    pygame.draw.rect(screen, COLOR.black, [info_start[0], info_start[1], GS*(GRID_X), GS*4],2)
 
     fontMiddle = pygame.font.SysFont(None, GS)
     fontSmall = pygame.font.SysFont(None, int(GS*3/4))
@@ -191,6 +258,24 @@ def Draw(screen):
     screen.blit(t
         , [info_start[0]+GS*GRID_X-GS/4 - t.get_rect().w, info_start[1]+GS/4+GS*2/4], )
 
+    t = fontSmall.render("%d/%d"%(GM.currentRound, GM.totalRound), True, COLOR.black)
+    screen.blit(t
+        , [info_start[0]+GS*GRID_X/2 - t.get_rect().w/2, info_start[1]+GS*5/4], )
+
+
+    # Draw log
+    if len(GM.log) > 0:
+        # draw circle
+        for i in range(len(GM.log)):
+            if GM.log[i] == "B":
+                color = COLOR.black
+            elif GM.log[i] == "W":
+                color = COLOR.white
+            pos = [info_start[0]+GS*3/4+(i%20)*GS*0.7, info_start[1]+(i//20)*GS*0.7+GS*2.2]
+            pygame.draw.circle(screen, COLOR.black, pos, GS/4+2, 0)
+            pygame.draw.circle(screen, color, pos, GS/4, 0)
+
+
     # Draw Current Player Arrow
     size = GS*3/4
     center = [info_start[0]+GS*GRID_X/2, info_start[1]+GS*3/4]
@@ -201,19 +286,41 @@ def Draw(screen):
         pygame.draw.polygon(screen, COLOR.black, [[center[0]+size, center[1]],[center[0]+size/3, center[1]-size*2/3],[center[0]+size/3, center[1]+size*2/3]], 0)
         pygame.draw.rect(screen, COLOR.black, [center[0]-size/3, center[1]-size*1/3, size*2/3, size*2/3], 0)
 
+    fontMono = pygame.font.SysFont("Consolas", GS)
     # Draw list of agents
     list_start = (BOARD_X+GS*(GRID_X+1), BOARD_Y+GS*4)
     t = fontLarge.render("Agent List", True, COLOR.black)
     screen.blit(t, [list_start[0]+GS/4, list_start[1]+GS/2])
+
+    # Human Player
+    
+    if GM.roundWin[-1] == 0:
+        v = 0.0
+    else:
+        v = float(GM.roundWin[-1])*100/float(GM.roundTotal[-1])
+    t = fontMiddle.render("Human", True, COLOR.black)
+    screen.blit(t, [list_start[0]+GS/4, list_start[1]+GS*1.8])
+    pygame.draw.line(screen, COLOR.black, [list_start[0]+GS/4, list_start[1]+GS*2.1+GS/2], [list_start[0]+GS/4+GS*18, list_start[1]+GS*2.1+GS/2], 2)
+    t = fontMono.render("%3d/%3d %6.2f%%"%(GM.roundWin[-1], GM.roundTotal[-1], v), True, COLOR.black)
+    screen.blit(t, [list_start[0]+GS/4+GS*8, list_start[1]+GS*1.7])
+    
     for i in range(len(AgentList)):
         # draw text
         t = fontMiddle.render(AgentList[i].__class__.__name__, True, COLOR.black)
-        screen.blit(t, [list_start[0]+GS/4, list_start[1]+GS*1.8+i*GS])
+        screen.blit(t, [list_start[0]+GS/4, list_start[1]+GS*2.8+i*GS])
         # draw line
-        pygame.draw.line(screen, COLOR.black, [list_start[0]+GS/4, list_start[1]+GS*2.1+i*GS+GS/2], [list_start[0]+GS/4+GS*15, list_start[1]+GS*2.1+i*GS+GS/2], 2)
-
+        pygame.draw.line(screen, COLOR.black, [list_start[0]+GS/4, list_start[1]+GS*3.1+i*GS+GS/2], [list_start[0]+GS/4+GS*18, list_start[1]+GS*3.1+i*GS+GS/2], 2)
+        # draw stat
+        
+        if GM.roundTotal[i] == 0:
+            v = 0.0
+        else:
+            v = float(GM.roundWin[i])*100/float(GM.roundTotal[i])
+        t = fontMono.render("%3d/%3d %6.2f%%"%(GM.roundWin[i], GM.roundTotal[i], v), True, COLOR.black)
+        screen.blit(t, [list_start[0]+GS/4+GS*8, list_start[1]+GS*2.7+i*GS])
 
     GM.Draw(screen)
+
 
 
     pygame.display.flip()
@@ -224,8 +331,11 @@ def Draw(screen):
 def MouseDown(pos):
     clickPos = Point2d((int)((pos[1]-BOARD_Y)/GS), (int)((pos[0]-BOARD_X)/GS))
     if clickPos.x < GRID_X and clickPos.y < GRID_Y and clickPos.x >= 0 and clickPos.y >= 0:
-        print(clickPos)
-        GG.PlaceStone(clickPos)
+        print("Human player placed at ",clickPos)
+        if GG.GetTurnText() == "black" and GM.blackPlayer == None:
+            GG.PlaceStone(clickPos)
+        elif GG.GetTurnText() == "white" and GM.whitePlayer == None:
+            GG.PlaceStone(clickPos)
     return 0
 
 

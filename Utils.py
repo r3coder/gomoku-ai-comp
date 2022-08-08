@@ -98,7 +98,7 @@ class UIButton:
     
     def SetActive(self, v):
         self.active = v
-
+    
     def Event(self, event):
         if self.active:
             if event.type == pygame.MOUSEBUTTONDOWN:
