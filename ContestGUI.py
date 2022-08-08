@@ -3,7 +3,7 @@ import random
 from re import T
 import timeit
 import pygame
-from Config import GAMEMODE, GRID_X, GRID_Y, BOARD_X, BOARD_Y, ROUNDS
+from Config import GAMEMODE, GRID_X, GRID_Y, BOARD_X, BOARD_Y, ROUNDS, DEBUG
 from Config import GS
 from Gomoku import GomokuGame
 from Utils import COLOR, Point2d, UIButton
@@ -11,8 +11,8 @@ from Utils import COLOR, Point2d, UIButton
 
 #############################################################################################
 # Add Your Agent Here
-from Agents import RandomDrop
-AgentList = [RandomDrop.RandomDrop()]
+from Agents import RandomDrop, CleverAgent, Lee_agent, TestYAI, ai
+AgentList = [RandomDrop.RandomDrop(), CleverAgent.CleverAgent(), Lee_agent.Lee_agent(), TestYAI.TestYAI(), ai.ai()]
 #############################################################################################
 
 GG = GomokuGame(Point2d(GRID_X, GRID_Y))
@@ -146,13 +146,18 @@ class GameManager:
                     pnt = None
                 else:
                     flag = False
-                    try:
+                    
+                    if DEBUG:
                         pnt = self.blackPlayer.Move(GG, "black")
                         print("Black Player %s Played %s"%(self.blackPlayer.__class__.__name__, str(pnt)))
-                    except Exception as e:
-                        print(str(e))
-                        pnt = None
-                        flag = True
+                    else:
+                        try:
+                            pnt = self.blackPlayer.Move(GG, "black")
+                            print("Black Player %s Played %s"%(self.blackPlayer.__class__.__name__, str(pnt)))
+                        except Exception as e:
+                            print(str(e))
+                            pnt = None
+                            flag = True
                     v, m = GG.PlaceStone(pnt)
                     if flag or not v:
                         print("Black Player Tried to play invalid move!, placing stone at random")
@@ -166,13 +171,17 @@ class GameManager:
                     pnt = None
                 else:
                     flag = False
-                    try:
+                    if DEBUG:
                         pnt = self.whitePlayer.Move(GG, "white")
                         print("White Player %s Played %s"%(self.whitePlayer.__class__.__name__, str(pnt)))
-                    except Exception as e:
-                        print(str(e))
-                        pnt = None
-                        flag = True
+                    else:
+                        try:
+                            pnt = self.whitePlayer.Move(GG, "white")
+                            print("White Player %s Played %s"%(self.whitePlayer.__class__.__name__, str(pnt)))
+                        except Exception as e:
+                            print(str(e))
+                            pnt = None
+                            flag = True
                     v, m = GG.PlaceStone(pnt)
                     if flag or not v:
                         print("White Player Tried to play invalid move!, placing stone at random position")
