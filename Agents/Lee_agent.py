@@ -6,7 +6,7 @@ import copy
 
 
 
-class Game:
+class Lee_agent:
     def Initialize(self):
         pass
 

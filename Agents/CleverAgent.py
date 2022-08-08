@@ -4,7 +4,7 @@ import random
 
 
 
-class test:
+class CleverAgent:
     def __init__(self):
         pass
 
