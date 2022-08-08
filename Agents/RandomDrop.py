@@ -7,7 +7,7 @@ from Utils import Point2d
 from Gomoku import *
 import random
 
-class Test:
+class RandomDrop:
     def __init__(self):
         pass
     
