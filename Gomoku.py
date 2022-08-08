@@ -88,10 +88,14 @@ class GomokuGame:
     ## pos(Point2d): position to place stone
     ## stone(int): stone to place. 1: black, 2: white, if it is not provided, it will be determined by the turn
     def PlaceStone(self, pos, stone = -1, slient = True):
+        if type(pos) != Point2d:
+            return False, "Position is not a Point2d"
         if self.state != "playing":
             return False, "Game is not playing"
         if self.board[pos.x, pos.y] != 0:
             return False, "Position is not empty"
+        if pos.x < 0 or pos.x >= self.boardDim.x or pos.y < 0 or pos.y >= self.boardDim.y:
+            return False, "Position is out of range"
         if stone == -1:
             stone = self.stoneCount % 2 + 1
         if not slient:
@@ -104,7 +108,7 @@ class GomokuGame:
             self.winner = stone
             if not slient:
                 print("Player {} wins".format(stone))
-            return True
+            return True, "Player {} wins".format(stone)
 
         v = self.IsValidMove(pos)
         if v:
@@ -112,13 +116,13 @@ class GomokuGame:
             self.stoneCount += 1
             if not slient:
                 print("Placed stone at", pos, "with stone", stone)
-            return True
+            return True, "Placed stone at {} with stone {}".format(pos, stone)
         
         if self.stoneCount == self.boardDim.x * self.boardDim.y:
             self.state = "over"
             if not slient:
                 print("Game is over")
-            return True
+            return True, "Game is over"
     
     # Get horizontal, vertical, diagonal lines for a position
     ## pos(Point2d): position to get lines for

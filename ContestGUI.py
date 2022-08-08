@@ -35,6 +35,8 @@ class GameManager:
 
         self.roundTotal = [0] * (len(AgentList) + 1)
         self.roundWin = [0] * (len(AgentList) + 1)
+        self.moveTotal = [0] * (len(AgentList))
+        self.moveFail = [0] * (len(AgentList))
         self.log = ""
 
         # UI Elements
@@ -134,28 +136,44 @@ class GameManager:
 
             if GG.GetTurnText() == "black":
                 if self.blackPlayer is None:
-                    pass
+                    pnt = None
                 else:
+                    flag = False
                     try:
                         pnt = self.blackPlayer.Move(GG, "black")
+                        print("Black Player %s Played %s"%(self.blackPlayer.__class__.__name__, str(pnt)))
                     except:
-                        print("Black Player Error!, placing stone at random")
+                        pnt = None
+                        flag = True
+                    v, m = GG.PlaceStone(pnt)
+                    if flag or not v:
+                        print("Black Player Tried to play invalid move!, placing stone at random")
+                        self.moveFail[AgentList.index(self.blackPlayer)] += 1
                         pnt = random.choice(GG.GetAllValidMoves())
+                        GG.PlaceStone(pnt)
+                    self.moveTotal[AgentList.index(self.blackPlayer)] += 1
                             
-                    GG.PlaceStone(pnt)
-                    self.lastPoint = pnt
-
             elif GG.GetTurnText() == "white":
                 if self.whitePlayer is None:
-                    pass
+                    pnt = None
                 else:
+                    flag = False
                     try:
                         pnt = self.whitePlayer.Move(GG, "white")
+                        print("White Player %s Played %s"%(self.whitePlayer.__class__.__name__, str(pnt)))
                     except:
-                        print("White Player Error!, placing stone at random")
+                        pnt = None
+                        flag = True
+                    v, m = GG.PlaceStone(pnt)
+                    if flag or not v:
+                        print("White Player Tried to play invalid move!, placing stone at random position")
+                        self.moveFail[AgentList.index(self.whitePlayer)] += 1
                         pnt = random.choice(GG.GetAllValidMoves())
-                    GG.PlaceStone(pnt)
-                    self.lastPoint = pnt
+                        GG.PlaceStone(pnt)
+                    self.moveTotal[AgentList.index(self.whitePlayer)] += 1
+            
+            if pnt != None:
+                self.lastPoint = pnt
             
             # Check if end of game
             if GG.state == "over":
@@ -286,7 +304,7 @@ def Draw(screen):
         pygame.draw.polygon(screen, COLOR.black, [[center[0]+size, center[1]],[center[0]+size/3, center[1]-size*2/3],[center[0]+size/3, center[1]+size*2/3]], 0)
         pygame.draw.rect(screen, COLOR.black, [center[0]-size/3, center[1]-size*1/3, size*2/3, size*2/3], 0)
 
-    fontMono = pygame.font.SysFont("Consolas", GS)
+    fontMono = pygame.font.SysFont("Consolas", GS//2)
     # Draw list of agents
     list_start = (BOARD_X+GS*(GRID_X+1), BOARD_Y+GS*4)
     t = fontLarge.render("Agent List", True, COLOR.black)
@@ -301,9 +319,14 @@ def Draw(screen):
     t = fontMiddle.render("Human", True, COLOR.black)
     screen.blit(t, [list_start[0]+GS/4, list_start[1]+GS*1.8])
     pygame.draw.line(screen, COLOR.black, [list_start[0]+GS/4, list_start[1]+GS*2.1+GS/2], [list_start[0]+GS/4+GS*18, list_start[1]+GS*2.1+GS/2], 2)
-    t = fontMono.render("%3d/%3d %6.2f%%"%(GM.roundWin[-1], GM.roundTotal[-1], v), True, COLOR.black)
-    screen.blit(t, [list_start[0]+GS/4+GS*8, list_start[1]+GS*1.7])
-    
+    t = fontMono.render("%3d/%3d %5.1f%%"%(GM.roundWin[-1], GM.roundTotal[-1], v), True, COLOR.black)
+    screen.blit(t, [list_start[0]+GS/4+GS*8, list_start[1]+GS*2])
+
+    t = fontSmall.render("Win Rate", True, COLOR.black)
+    screen.blit(t, [list_start[0]+GS*9, list_start[1]+GS*1.2])
+    t = fontSmall.render("Move Valid rate", True, COLOR.black)
+    screen.blit(t, [list_start[0]+GS*14, list_start[1]+GS*1.2])
+
     for i in range(len(AgentList)):
         # draw text
         t = fontMiddle.render(AgentList[i].__class__.__name__, True, COLOR.black)
@@ -316,8 +339,12 @@ def Draw(screen):
             v = 0.0
         else:
             v = float(GM.roundWin[i])*100/float(GM.roundTotal[i])
-        t = fontMono.render("%3d/%3d %6.2f%%"%(GM.roundWin[i], GM.roundTotal[i], v), True, COLOR.black)
-        screen.blit(t, [list_start[0]+GS/4+GS*8, list_start[1]+GS*2.7+i*GS])
+        if GM.moveTotal[i] == 0:
+            m = 0.0
+        else:
+            m = float(GM.moveFail[i])*100/float(GM.moveTotal[i])
+        t = fontMono.render("%3d/%3d %5.1f%%   %4d/%4d %5.1f%%"%(GM.roundWin[i], GM.roundTotal[i], v, GM.moveFail[i], GM.moveTotal[i], m), True, COLOR.black)
+        screen.blit(t, [list_start[0]+GS/4+GS*8, list_start[1]+GS*3+i*GS])
 
     GM.Draw(screen)
 
